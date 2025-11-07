@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zombie Shooter</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background: #222;
+    color: white;
+  }
+  #gameCanvas {
+    background: #333;
+    display: block;
+    margin: 0 auto;
+  }
+  #gameOver {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 36px;
+    cursor: pointer;
+    display: none;
+    color: red;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<div id="gameOver"></div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+let gun = { x: 400, y: 300, width: 20, height: 20 };
+let zombies = [];
+let gameOver = false;
+let score = 0;
+
+// Spawn zombies randomly
+function spawnZombie() {
+  let edge = Math.floor(Math.random() * 4);
+  let zombie = { x: 0, y: 0, size: 30, speed: 1 + Math.random() * 2 };
+  if(edge === 0) { zombie.x = 0; zombie.y = Math.random() * canvas.height; }
+  if(edge === 1) { zombie.x = canvas.width; zombie.y = Math.random() * canvas.height; }
+  if(edge === 2) { zombie.x = Math.random() * canvas.width; zombie.y = 0; }
+  if(edge === 3) { zombie.x = Math.random() * canvas.width; zombie.y = canvas.height; }
+  zombies.push(zombie);
+  score++; // Count zombies spawned as score
+}
+
+// Update zombies to follow gun
+function updateZombies() {
+  for(let z of zombies) {
+    let dx = gun.x - z.x;
+    let dy = gun.y - z.y;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    z.x += (dx / dist) * z.speed;
+    z.y += (dy / dist) * z.speed;
+    
+    // Check collision
+    if(Math.abs(gun.x - z.x) < z.size && Math.abs(gun.y - z.y) < z.size) {
+      gameOver = true;
+      document.getElementById('gameOver').innerHTML = `You lose!<br>Zombies following you: ${score}<br>Click to Play Again - by Borka`;
+      document.getElementById('gameOver').style.display = 'block';
+    }
+  }
+}
+
+// Draw gun and zombies
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  
+  // Gun
+  ctx.fillStyle = 'yellow';
+  ctx.fillRect(gun.x - gun.width/2, gun.y - gun.height/2, gun.width, gun.height);
+  
+  // Zombies
+  ctx.fillStyle = 'green';
+  for(let z of zombies) {
+    ctx.fillRect(z.x - z.size/2, z.y - z.size/2, z.size, z.size);
+  }
+}
+
+// Game loop
+function gameLoop() {
+  if(!gameOver) {
+    updateZombies();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+}
+
+// Move gun with mouse
+canvas.addEventListener('mousemove', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  gun.x = e.clientX - rect.left;
+  gun.y = e.clientY - rect.top;
+});
+
+// Restart game
+document.getElementById('gameOver').addEventListener('click', () => {
+  zombies = [];
+  gameOver = false;
+  score = 0;
+  gun.x = 400; gun.y = 300;
+  document.getElementById('gameOver').style.display = 'none';
+  gameLoop();
+});
+
+// Spawn zombies every 2 seconds
+setInterval(() => { if(!gameOver) spawnZombie(); }, 2000);
+
+gameLoop();
+</script>
+</body>
+</html>
